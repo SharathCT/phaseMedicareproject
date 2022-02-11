@@ -1,0 +1,986 @@
+MEDICARE PROJECT
+==============================================================================================
+CONTACT
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php  include "includes/navigation.php"; ?>
+
+<?php
+if(isset($_POST['submit'])){
+$to = "harshitbansal373@gmail.com";
+$subject = $_POST['subject'];
+$body = $_POST['body'];
+$header = $_POST['email'];
+
+    if(mail($to,$subject,$body,$header)){
+        $msg = "Mail has been sent successfully.";
+    }else{
+        $msg = "Sending Failed!";
+    }
+
+}else{
+    $msg = "";
+}
+
+?>
+ 
+ 
+<!-- Page Content -->
+<div class="container">
+    <section id="login">
+        <div class="row  justify-content-center align-items-center">
+            <div class="col-sm-5 border border-dark mt-4 px-5 py-3">
+                <div class="form-wrap">
+				    <h3 class="text-center"><i class="fas fa-envelope fa-3x"></i></h3>
+                        <form role="form" action="contact.php" method="post" id="login-form" autocomplete="off">
+                            <h6><?php echo $msg; ?></h6>
+                            <div class="form-group">
+                                <label for="email" class="sr-only">Email</label>
+                                <input type="email" name="email" id="email" class="form-control" placeholder="Enter Your email">
+                            </div>
+                            <div class="form-group">
+                                <label for="subject" class="sr-only">subject</label>
+                                <input type="text" name="subject" id="subject" class="form-control" placeholder="Enter Your subject">
+                            </div>
+                            <div class="form-group">
+                                <textarea class="form-control" name="body" id="body" cols="50" rows="6" placeholder="Type Your Message..."></textarea>
+                            </div>
+
+                            <input type="submit" name="submit" id="btn-login" class="btn btn-secondary btn-lg btn-block mb-3" value="Submit">
+                        </form>
+                </div>
+            </div> <!-- /.col-sm-5 -->
+        </div> <!-- /.row -->
+    </section>
+
+<hr>
+
+<?php include "includes/footer.php";?>
+
+</div> <!-- /.container --
+
+
+==============================================================================================
+FORGET
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php  include "includes/navigation.php"; ?>
+
+<?php
+    
+    if(empty($_GET['forgot'])){
+        redirect('index.php');
+    }
+
+    if(isset($_POST['email'])){
+        $email = $_POST['email'];
+        $length = 50;
+        $token = bin2hex(openssl_random_pseudo_bytes($length));
+
+        if(email_exists($email)){
+            
+           $stmt = mysqli_prepare($connection,"UPDATE users SET token='{$token}' WHERE user_email= ?");
+            mysqli_stmt_bind_param($stmt, "s", $email);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_close($stmt);
+            
+            if(isset($_POST['sendmail'])) { 
+                $email = $_POST['email'];
+                $subject = "test email";
+                $message = '<p>Please click to reset Your Password
+                            <a href="http://localhost/blog/reset.php?email='.$email.'&token='.$token.' ">
+                                    http://localhost/blog/reset.php?email='.$email.'&token='.$token.'</a>
+                            </p>';
+
+                if(mail($email,$subject,$message)){
+                    $emailsent = true;
+                }else{
+                    echo "failed to send mail, TRY AGAIN!!!";
+                }
+            }
+            
+        }else{
+            echo '<center>Please insert correct Email Id</center>';
+        }
+    }
+
+?>
+
+<!-- Page Content -->
+<div class="container">
+    <section id="login">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-sm-4 col-sm-offset-4">
+                <div class="form-wrap text-center mt-5 p-4 border border-dark">
+                    
+                    <?php if(!isset($emailsent)): ?>
+
+				        <h3><i class="fa fa-lock fa-4x"></i></h3>
+				        <h2>Forgot Password?</h2>
+                        <p>You can reset your password here.</p>
+    	                    <form role="form" action="" method="post" id="login-form" autocomplete="off">
+    	                        <div class="input-group mb-3">
+				        		 	<div class="input-group-prepend">
+ 				        				<span class="input-group-text"><i class="far fa-envelope"></i></span>
+				        			</div>
+    	                            	<label for="email" class="sr-only">email</label>
+                                        <input type="email" id="email" name="email" placeholder="email address" class="form-control" required>									
+				        		</div>
+                                <div class="form-group">
+                                <input type="submit" name="sendmail" class="btn btn-lg btn-secondary" value="Reset Password">                            
+                                </div>
+                                <input type="hidden" class="hide" name="token" id="token" value="">
+    	                    </form>
+
+                    <?php else: ?>
+                        <h2>Please check your email</h2>
+
+                    <?php endif; ?>
+
+    	        </div>
+		    </div> <!-- /.col-sm-4 -->
+		</div> <!-- /.row -->
+    </section>
+
+<hr>
+
+<?php include "includes/footer.php";?>
+
+</div> <!-- /.container -->
+
+==============================================================================================
+INDEX
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php include "includes/navigation.php"; ?>
+
+  <!-- Page Content -->
+  <div class="container">
+    <div class="row">
+      <!-- Blog Entries Column -->
+      <div class="col-md-8">
+      
+      <?php
+        $per_page =4;
+
+        if(isset($_GET['page'])){
+          $page = $_GET['page'];
+        }else{
+          $page = "";
+        }
+
+        if($page == 1 || $page == ""){
+          $page_1 = 0;
+        }else{
+          $page_1 = ($page * $per_page) -$per_page;
+        }
+
+        $post_query_count = "SELECT * FROM posts";
+        $find_count = mysqli_query($connection,$post_query_count);
+        $count = mysqli_num_rows($find_count);
+        $count = ceil($count/$per_page);
+         
+        $query = "SELECT * FROM posts LIMIT $page_1 ,$per_page";
+        $select_all_posts_query = mysqli_query($connection,$query);
+        while($row = mysqli_fetch_assoc($select_all_posts_query)){
+            $post_id = $row['post_id'];
+            $post_title = $row['post_title'];
+            $post_user = $row['post_user'];
+            $post_date = $row['post_date'];
+            $post_image = $row['post_image'];
+            $post_content = $row['post_content'];
+      ?>
+
+                  
+        <!--first Blog Post -->
+        <h2> 
+          <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $post_title; ?></a>
+        </h2>
+        <p class="lead">
+            <?php
+            $query = "SELECT * FROM users WHERE username = '$post_user' ";
+            $select_user_query = mysqli_query($connection,$query);
+            while($row = mysqli_fetch_assoc($select_user_query)){
+              $user_firstname = $row['user_firstname'];
+              $user_lastname = $row['user_lastname'];
+            }
+            $name = $user_firstname.' '.$user_lastname;
+            ?>
+            by <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $name; ?></a>
+        </p>
+        <p> <i class="far fa-clock"></i> <?php echo $post_date; ?></p>
+        <hr>
+        <a href="post.php?p_id='<?php echo $post_id; ?>'">
+        <img class="img-fluid" src="images/<?php echo imagePlaceholder($post_image);?>" alt="img">
+        </a>
+        <hr>  
+        <p><?php echo $post_content; ?></p>
+          <a href="post.php?p_id='<?php echo $post_id; ?>'" class="btn btn-primary">Read More &rarr;</a>
+        <hr>  
+              
+        <?php } ?>
+ 
+
+      </div>
+
+<!-- Sidebar Widgets Column -->
+<?php  include "includes/sidebar.php"; ?>
+
+    </div>
+    <!-- /.row -->
+
+  </div>
+  <!-- /.container -->
+
+<nav aria-label="Page navigation example">
+  <ul class="pagination justify-content-center">
+    <?php
+      if(isset($_GET['page'])){
+        $pagination = $_GET['page'];
+        
+        if($pagination!=1){
+          $pre = $pagination-1;
+          echo "<li class='page-item'><a class='page-link' href='index.php?page={$pre}'>Previous</a></li>";
+        }
+      }
+
+      for($i=1;$i<=$count;$i++){
+        if($i == $page){
+          echo "<li class='page-item active'><a class='page-link' href='index.php?page={$i}'>{$i}</a></li>";
+        }else{
+          echo "<li class='page-item'><a class='page-link' href='index.php?page={$i}'>{$i}</a></li>";
+        }
+      }
+
+      if(empty($_GET['page'])){
+        echo "<li class='page-item'><a class='page-link' href='index.php?page=2'>Next</a></li>";
+      }
+
+      if(isset($_GET['page'])){
+        $pagination = $_GET['page'];
+
+        if($pagination!=$count){
+          $next = $pagination+1;
+          echo "<li class='page-item'><a class='page-link' href='index.php?page={$next}'>Next</a></li>";
+        }
+      }
+
+    ?>
+  </ul>
+</nav>
+
+<?php  include "includes/footer.php"; ?>
+
+==============================================================================================
+LOGIN
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php  include "includes/navigation.php"; ?>
+
+<!-- Page Content -->
+<div class="container">
+    <section id="login">
+        <div class="row  justify-content-center align-items-center">
+            <div class="col-sm-4 col-sm-offset-4">
+                <div class="form-wrap">
+					<h3 class="text-center mt-2"><i class="fas fa-user-circle fa-4x"></i></h3>
+					<h2 class="text-center">Login</h2>
+                	    <form role="form" action="includes/login.php" method="post" id="login-form" autocomplete="off">
+                			<div class="input-group mb-3">
+								<div class="input-group-prepend">
+     								<span class="input-group-text"><i class="far fa-user"></i></span>
+								</div>
+                	            <label for="username" class="sr-only">Username</label>
+								<input type="text" name="username" id="username" class="form-control" placeholder="Enter Username">
+							</div>
+                	        <div class="input-group mb-3">
+								<div class="input-group-prepend">
+     								<span class="input-group-text"><i class="fas fa-key"></i></span>
+								</div>
+                	            <label for="password" class="sr-only">password</label>
+								<input type="password" name="password" id="password" class="form-control" placeholder="Enter Password">
+                	        </div>
+                	        <input type="submit" name="login" id="btn-login" class="btn btn-secondary btn-lg btn-block" value="Login">
+							<div class="form-group">
+      						<a href="forgot.php?forgot=<?php echo uniqid(true); ?>"> Forgot Password?</a>
+      						</div>
+                	    </form>
+                </div>
+    	    </div> <!-- /.col-sm-4 -->
+    	</div> <!-- /.row -->
+    </section>
+
+    <hr>
+
+<?php include "includes/footer.php";?>
+
+</div> <!-- /.container -->
+==============================================================================================
+POST
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php include "includes/navigation.php"; ?>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="row">
+        <!-- Blog Entries Column -->
+        <div class="col-md-8">
+
+        <?php 
+            if(isset($_GET['p_id'])){
+               $the_post_id = $_GET['p_id'];
+            }
+            $query = "SELECT * FROM posts WHERE post_id = {$the_post_id} ";
+            $select_all_posts_query = mysqli_query($connection,$query);
+            while($row = mysqli_fetch_assoc($select_all_posts_query)){
+               $post_title = $row['post_title'];
+               $post_user = $row['post_user'];
+               $post_date = $row['post_date'];
+               $post_image = $row['post_image'];
+               $post_content = $row['post_content'];
+        ?>
+
+                
+        <!--first Blog Post -->
+        <h2> 
+          <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $post_title; ?></a>
+        </h2>
+        <p class="lead">
+        <?php
+            $query = "SELECT * FROM users WHERE username = '$post_user' ";
+            $select_user_query = mysqli_query($connection,$query);
+            while($row = mysqli_fetch_assoc($select_user_query)){
+              $user_firstname = $row['user_firstname'];
+              $user_lastname = $row['user_lastname'];
+            }
+            $name = $user_firstname.' '.$user_lastname;
+            ?>
+            by <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $name; ?></a>
+        </p>
+        <p> <i class="far fa-clock"></i> <?php echo $post_date; ?></p>
+        <hr>
+        <a href="post.php?p_id='<?php echo $post_id; ?>'">
+        <img class="img-fluid" src="images/<?php echo imagePlaceholder($post_image);?>" alt="img">
+        </a>
+        <hr>  
+        <p><?php echo $post_content; ?></p>
+        <hr>     
+           
+        <?php } ?>
+
+
+        <!-- Blog Comments -->
+        <?php
+
+        if(isset($_POST['create_comment'])){
+            $the_post_id = $_GET['p_id'];
+            $comment_author = $_POST['comment_author'];
+            $comment_email = $_POST['comment_email'];
+            $comment_content = $_POST['comment_content'];
+
+            if(!empty($comment_author) && !empty($comment_email) && !empty($comment_content)){
+                $query = "INSERT INTO comments(comment_post_id,comment_author,comment_email,
+                        comment_content,comment_status,comment_date) ";
+                $query .= "VALUES ( $the_post_id,'{$comment_author}','{$comment_email}',
+                        '{$comment_content}','show', NOW() )";
+                
+                $create_comment_query = mysqli_query($connection,$query);
+                
+                confirm_query($create_comment_query);
+                
+            }else{
+                echo "<script>alert('fields cannot be empty')</script>";
+            }          
+
+        }
+        ?>
+
+        <!-- Comments Form -->
+        <div class="col-sm-7">
+            <h4>Leave a Comment:</h4>
+            <form action="" method="POST" role="form">
+                <div class="form-group">
+                    <label for="Author">Name</label>
+                    <input type="text" class="form-control" name="comment_author">
+                </div>
+                <div class="form-group">
+                <label for="Email">Email</label>
+                    <input type="email" class="form-control" name="comment_email">
+                </div>
+                <div class="form-group">
+                <label for="">Your Comment</label>
+                    <textarea class="form-control" rows="3" name="comment_content"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" name="create_comment">Submit</button>
+            </form>
+        </div>
+        
+        <hr>
+
+        <!-- Posted Comments -->
+        <?php
+        
+        $query = "SELECT * FROM comments WHERE comment_post_id = {$the_post_id} ";
+        $query .= "AND comment_status = 'show' ";
+        $query .= "ORDER BY comment_id DESC ";
+        $select_comments_query = mysqli_query($connection,$query);
+
+        confirm_query($select_comments_query);
+
+        while($row = mysqli_fetch_array($select_comments_query)) {
+           $comment_date = $row['comment_date'];
+           $comment_author = $row['comment_author'];
+           $comment_content = $row['comment_content'];
+        ?>
+
+        <!-- Comment -->
+        <div class="media mb-4">
+            <a class="pull-left" href="#">
+                <img class="media-object" src="http://placehold.it/64x64" alt="">
+            </a>
+            <div class="media-body">
+                <h4 class="media-heading"><?php echo $comment_author; ?>
+                    <small class="lead"><?php echo $comment_date; ?></small>
+                </h4>
+                <?php echo $comment_content; ?>
+            </div>
+        </div>
+
+        <?php } ?>
+
+        </div>
+
+<!-- Sidebar Widgets Column -->
+<?php  include "includes/sidebar.php"; ?>
+
+    </div>
+    <!-- /.row -->
+
+</div>
+<!-- /.container -->
+
+<?php  include "includes/footer.php"; ?>
+==============================================================================================
+REGISTER
+==============================================================================================
+?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php  include "includes/navigation.php"; ?>
+
+<?php
+if(isset($_POST['submit'])){
+$username = $_POST['username'];
+$firstname = $_POST['firstname'];
+$lastname = $_POST['lastname'];
+$email = $_POST['email'];
+$password = $_POST['password'];
+
+    if(!empty($username) && !empty($email) && !empty($password)){
+        $username = mysqli_real_escape_string($connection,$username);
+        $firstname = mysqli_real_escape_string($connection,$firstname);
+        $lastname = mysqli_real_escape_string($connection,$lastname);
+        $email = mysqli_real_escape_string($connection,$email);
+        $password = mysqli_real_escape_string($connection,$password);
+
+        $password = password_hash($password, PASSWORD_BCRYPT, array('cost' => 12)); 
+
+        // $query = "INSERT INTO users (user_role,username,user_firstname,user_lastname,user_email,user_password) ";
+        // $query .= "VALUES( 'subscriber','{$username}','{$firstname}','{$lastname}','{$email}','{$password}' )";
+        // $register_user_query = mysqli_query($connection,$query);
+        // if(!$register_user_query){
+        //     die("QUERY FAILED" . mysqli_error($connection) . ' ' . mysqli_errno($connection));
+        // }
+
+        $query = "INSERT INTO users (user_role,username,user_firstname,user_lastname,user_email,user_password) ";
+        $query .= "VALUES( 'subscriber',?,?,?,?,?)";
+        $stmt = mysqli_prepare($connection,$query);
+        mysqli_stmt_bind_param($stmt,"sssss",$username,$firstname,$lastname,$email,$password);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        if(!$stmt){
+            die("QUERY FAILED" . mysqli_error($connection) . ' ' . mysqli_errno($connection));
+        }
+
+        $message = "Your Registration has been submitted";
+
+    }else{
+        $message = "fields cannot be empty";
+    }
+
+}else{
+    $message = "";
+}
+
+
+?>
+   
+ 
+<!-- Page Content -->
+<div class="container">
+    <section id="login">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-sm-5 col-sm-offset-5">
+                <div class="form-wrap">
+	    		    <h3 class="text-center mt-3 mb-3"><i class="fas fa-portrait fa-3x"></i></h3>
+                        <form role="form" action="registration.php" method="post" id="login-form" autocomplete="off">
+                            <h6><?php echo $message; ?></h6>
+                            <div class="form-group">
+                                <label for="username" class="sr-only">username</label>
+                                <input type="text" name="username" id="username" class="form-control" placeholder="Enter Desired Username">
+                            </div>
+                            <div class="form-group">
+                                <label for="firstname" class="sr-only">Firstname</label>
+                                <input type="text" name="firstname" id="firstname" class="form-control" placeholder="Enter Your Firstname">
+                            </div>
+                            <div class="form-group">
+                                <label for="lastname" class="sr-only">Lastname</label>
+                                <input type="text" name="lastname" id="lastname" class="form-control" placeholder="Enter Your Lastname">
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="sr-only">Email</label>
+                                <input type="email" name="email" id="email" class="form-control" placeholder="somebody@example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="password" class="sr-only">Password</label>
+                                <input type="password" name="password" id="key" class="form-control" placeholder="Password">
+                            </div>
+                            <input type="submit" name="submit" id="btn-login" class="btn btn-secondary btn-lg btn-block" value="Register">
+                        </form>
+                </div>
+            </div> <!-- /.col-sm-5 -->
+        </div> <!-- /.row -->
+    </section>
+
+<hr>
+
+<?php include "includes/footer.php";?>
+
+</div> <!-- /.container -->
+
+==============================================================================================
+RESET
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<?php 
+
+    if(!isset($_GET['email']) && !isset($_GET['token'])){
+        redirect('index.php');
+    }
+
+    // $email = 'harshitbansal373@gmail.com';
+    // $token = '77020c98efbc545715012c76bec5aaec6e8a2cfced12d25f1c2f2626a1ef4af2271b1e458848d80a745e6b578b954cf34427';
+
+    if($stmt = mysqli_prepare($connection, 'SELECT  username,user_email, token FROM users WHERE token=?')){
+        mysqli_stmt_bind_param($stmt, "s",$_GET['token']);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_bind_result($stmt,$username,$user_email,$token);
+        mysqli_stmt_fetch($stmt);
+        mysqli_stmt_close($stmt);
+
+        // if($_GET['token']!==$token || $_GET['email']!==$email){
+        //     redirect('index.php');
+        // }
+
+        if(isset($_POST['password']) && isset($_POST['confirmpassword'])){
+            
+            if($_POST['password']==$_POST['confirmpassword']){
+
+                $password = $_POST['password'];
+                $hashedpassword = password_hash($password, PASSWORD_BCRYPT, array('cost'=>12));
+                if($stmt = mysqli_prepare($connection, "UPDATE users SET token='',user_password='{$hashedpassword}' WHERE user_email=?")){
+
+                    mysqli_stmt_bind_param($stmt,"s",$_GET['email']);
+                    mysqli_stmt_execute($stmt);
+
+                    if(mysqli_stmt_affected_rows($stmt) >= 1){
+                        redirect('login.php');
+                    }
+
+                    mysqli_stmt_close($stmt);
+
+                }
+
+
+            }else{
+                echo "<h5 class='text-center'>Both Password didn't Match<br>Please enter same Password Password.</h5> ";
+            }
+        }
+    }
+
+?>
+
+<!-- Page Content -->
+<div class="container">
+
+<section id="login">
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-sm-4 col-sm-offset-4 border border-dark mt-5">
+                <div class="form-wrap">
+                    <div class="text-center mt-3">
+				        <h2>Reset Password</h2>
+                        <p>You can reset your password here.</p>
+    	                    <form role="form" action="" method="post" id="login-form" autocomplete="off">
+    	                        <div class="input-group mb-3">
+				        		 	<div class="input-group-prepend">
+ 				        				<span class="input-group-text"><i class="fas fa-check"></i></span>
+				        			</div>
+                                    <label for="password" class="sr-only">Password</label>
+                                <input type="password" name="password" id="key" class="form-control" placeholder="Enter Password" required>
+				        		</div>
+                                <div class="input-group mb-3">
+				        		 	<div class="input-group-prepend">
+ 				        				<span class="input-group-text"><i class="fas fa-check-double"></i></span>
+				        			</div>
+                                    <label for="password" class="sr-only">Password</label>
+                                <input type="password" name="confirmpassword" id="key" class="form-control" placeholder="Confirm Password" required>
+				        		</div>
+                                <div class="form-group">
+                                <input type="submit" name="" class="btn btn-lg btn-primary btn-block" value="Reset Password">                            
+                                </div>
+                                <input type="hidden" class="hide" name="token" id="token" value="">
+    	                    </form>
+
+                    </div>
+    	        </div>
+		    </div> <!-- /.col-xs-12 -->
+		</div> <!-- /.row -->
+    </div> <!-- /.container -->
+    </section>
+
+    <hr>
+
+<?php include "includes/footer.php";?>
+
+</div> <!-- /.container -->
+
+==============================================================================================
+SEARCH
+==============================================================================================
+<?php  include "includes/header.php"; ?>
+
+<!-- Navigation -->
+<?php include "includes/navigation.php"; ?>
+
+
+<!-- Page Content -->
+<div class="container">
+    <div class="row">
+        <!-- Blog Entries Column -->
+        <div class="col-md-8">
+    
+        <?php
+        if(isset($_POST['submit'])){
+            $search = $_POST['search'];
+        
+            $query = "SELECT * FROM posts WHERE post_tags LIKE '%$search%'";
+            $search_query = mysqli_query($connection,$query);
+          
+            confirm_query($search_query);
+          
+            $count = mysqli_num_rows($search_query);
+
+            if($count == 0){
+              echo "<h1 class='text-center'>NO RESULT</h1>";
+            }
+            else{
+                while($row = mysqli_fetch_assoc($search_query)){
+                    $post_id = $row['post_id'];
+                    $post_title = $row['post_title'];
+                    $post_user = $row['post_user'];
+                    $post_date = $row['post_date'];
+                    $post_image = $row['post_image'];
+                    $post_content = $row['post_content'];
+        ?>
+ 
+                   
+            <!--first Blog Post -->
+            <h2> 
+              <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $post_title; ?></a>
+            </h2>
+            <p class="lead">
+                <?php
+                $query = "SELECT * FROM users WHERE username = '$post_user' ";
+                $select_user_query = mysqli_query($connection,$query);
+                while($row = mysqli_fetch_assoc($select_user_query)){
+                  $user_firstname = $row['user_firstname'];
+                  $user_lastname = $row['user_lastname'];
+                }
+                $name = $user_firstname.' '.$user_lastname;
+                ?>
+                by <a href="post.php?p_id='<?php echo $post_id; ?>'"><?php echo $name; ?></a>
+            </p>
+            <p> <i class="far fa-clock"></i> <?php echo $post_date; ?></p>
+            <hr>
+            <a href="post.php?p_id='<?php echo $post_id; ?>'">
+            <img class="img-fluid" src="images/<?php echo imagePlaceholder($post_image);?>" alt="img">
+            </a>
+            <hr>  
+            <p><?php echo $post_content; ?></p>
+                <a href="post.php?p_id='<?php echo $post_id; ?>'" class="btn btn-primary">Read More &rarr;</a>
+            <hr>        
+ 
+        <?php   } 
+            }
+        }
+        ?>
+
+        </div>
+
+<!-- Sidebar Widgets Column -->
+<?php  include "includes/sidebar.php"; ?>
+
+    </div>
+    <!-- /.row -->
+
+</div>
+<!-- /.container -->
+
+<?php  include "includes/footer.php"; ?>
+==============================================================================================
+passward
+==============================================================================================
+PHP-CMS/admin/password.php /
+@harshitbansal373
+harshitbansal373 files are modified
+Latest commit 29b0049 on 15 Jan 2019
+ History
+ 1 contributor
+79 lines (62 sloc)  2.52 KB
+   
+<?php include "includes/header.php" ?>
+
+<?php
+    if(isset($_POST['password']) && isset($_POST['confirmpassword'])){
+            
+        if($_POST['password']==$_POST['confirmpassword']){
+            $password = $_POST['password'];
+            $hashedpassword = password_hash($password, PASSWORD_BCRYPT, array('cost'=>12));
+
+            if($stmt = mysqli_prepare($connection, "UPDATE users SET user_password='{$hashedpassword}' WHERE username=?")){
+                mysqli_stmt_bind_param($stmt,"s",$_SESSION['username']);
+                mysqli_stmt_execute($stmt);
+
+                if(mysqli_stmt_affected_rows($stmt) >= 1){
+                    redirect('../login.php');
+                }
+
+                mysqli_stmt_close($stmt);
+
+            }
+        }else{
+            $msg= '<h6 class="mb-3 ml-3">Both Password are not Same<br>Please Enter Same Password Password</h6>';
+        }
+        
+    }
+?>
+
+<!-- Navbar -->
+<?php include "includes/navigation.php" ?>
+
+<div id="wrapper">
+
+<!-- Sidebar -->
+<?php include "includes/sidebar.php" ?>
+
+<div id="content-wrapper">
+    <div class="container-fluid">
+        <!-- Page Content -->
+        <h2>Change Your Password</h2>
+        <hr>
+
+        <?php
+         if(isset($msg)){
+             echo $msg;
+         }
+        ?>
+
+        <div class="col-sm-5">
+            <form action="" method="POST" enctype="multipart/form-data">
+                <div class="input-group mb-3">
+	    	     	<div class="input-group-prepend">
+ 	    	    		<span class="input-group-text"><i class="fas fa-check"></i></span>
+	    	    	</div>
+                    <label for="password" class="sr-only">Password</label>
+                <input type="password" name="password" id="key" class="form-control" placeholder="Enter Password" required>
+	    	    </div>
+                <div class="input-group mb-3">
+	    	     	<div class="input-group-prepend">
+ 	    	    		<span class="input-group-text"><i class="fas fa-check-double"></i></span>
+	    	    	</div>
+                    <label for="password" class="sr-only">Password</label>
+                <input type="password" name="confirmpassword" id="key" class="form-control" placeholder="Confirm Password" required>
+	    	    </div>
+                <div class="form-group">
+                <input type="submit" name="" class="btn btn-secondary" value="CHANGE PASSWORD">                            
+                </div>
+            </form>
+        </div>
+
+    </div>
+    <!-- /.container-fluid -->
+
+</div>
+<!-- /.content-wrapper -->
+
+</div>
+<!-- /#wrapper -->
+
+<?php include "includes/footer.php" ?>
+==============================================================================================
+profile
+==============================================================================================
+<?php include "includes/header.php" ?>
+
+<?php
+if(isset($_SESSION['username'])){
+    $username = $_SESSION['username'];
+    $query = "SELECT * FROM users WHERE username = '{$username}' ";
+    $select_users_by_id = mysqli_query($connection,$query);
+    while($row = mysqli_fetch_assoc($select_users_by_id)){
+        $user_firstname = $row['user_firstname'];
+        $user_lastname = $row['user_lastname'];
+        $user_email = $row['user_email'];
+        $user_password = $row['user_password'];
+    }
+
+}
+?>
+
+<?php
+if(isset($_POST['update_user'])){
+    $user_firstname = $_POST['firstname'];
+    $user_lastname = $_POST['lastname'];
+    $user_email = $_POST['user_email'];
+    $user_password = $_POST['user_password'];
+
+    $user_password = password_hash($user_password, PASSWORD_BCRYPT, array('cost' => 12)); 
+ 
+    $query = "UPDATE users SET user_firstname = '{$user_firstname}', user_lastname = '{$user_lastname}', 
+            user_email = '{$user_email}', user_password = '{$user_password}' WHERE username = ? ";
+  
+    $stmt_update_user_query = mysqli_prepare($connection,$query);
+    mysqli_stmt_bind_param($stmt_update_user_query, "s", $username);
+    mysqli_stmt_execute($stmt_update_user_query);
+    mysqli_stmt_close($stmt_update_user_query);
+
+    confirm_query($stmt_update_user_query);
+
+    header("location:index.php");
+
+}
+?>
+
+<!-- Navbar -->
+<?php include "includes/navigation.php" ?>
+
+<div id="wrapper">
+
+<!-- Sidebar -->
+<?php include "includes/sidebar.php" ?>
+
+<div id="content-wrapper">
+
+  <div class="container-fluid">
+    <!-- Page Content -->
+    <h2>Edit Your Personal Details</h2>
+    <hr>
+
+    <div class="col-sm-5">
+        <form action="" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="firstname">Firstname</label>
+                <input type="text" value="<?php echo $user_firstname; ?>" class="form-control" name="firstname" >
+            </div>
+            
+            <div class="form-group">
+                <label for="lastname">Lastname</label>
+                <input type="text" value="<?php echo $user_lastname; ?>" class="form-control" name="lastname" >
+            </div>
+    
+            <div class="form-group">
+                <label for="user_email">Email</label>
+                <input type="email" value="<?php echo $user_email; ?>" class="form-control" name="user_email" >
+            </div>
+            <!-- <div class="form-group">
+                <label for="post_image">Post Image</label>
+                <input type="file" class="form-control-file" name="post_image">
+            </div> -->
+            <div class="form-group">
+                <input type="submit" class="btn btn-secondary " name="update_user" value="UPDATE PROFILE" >
+            </div>
+        </form>
+    </div>
+
+  </div>
+  <!-- /.container-fluid -->
+
+</div>
+<!-- /.content-wrapper -->
+
+</div>
+<!-- /#wrapper -->
+
+<?php include "includes/footer.php" ?>
+==============================================================================================
+users
+==============================================================================================
+<?php include "includes/header.php" ?>
+
+<!-- Navbar -->
+<?php include "includes/navigation.php" ?>
+
+<div id="wrapper">
+
+<!-- Sidebar -->
+<?php include "includes/sidebar.php" ?>
+
+<div id="content-wrapper">
+
+    <div class="container-fluid">
+        <!-- Page Content -->
+        <?php
+
+        if(isset($_GET['source'])){
+          $source = $_GET['source'];
+        
+        }
+        else{
+          $source ='';
+        }
+
+        switch($source){
+          case 'add_user';
+          include "includes/add_user.php" ;    
+          break;
+        
+          default:
+          include "includes/view_all_users.php" ;
+          break;
+        }
+      
+        ?>
+
+    </div>
+    <!-- /.container-fluid -->
+
+</div>
+<!-- /.content-wrapper -->
+
+</div>
+<!-- /#wrapper -->
+
+<?php include "includes/footer.php" ?>
